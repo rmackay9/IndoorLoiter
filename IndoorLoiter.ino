@@ -8,14 +8,13 @@
 
 ////////////////// Pozyx Prams //////////////////////////////
 
-uint8_t num_anchors = 4;                                    // the number of anchors
+#define NUM_ANCHORS 4
 // the network id of the anchors: change these to the network ids of your anchors.
 uint16_t anchors[4] = { 0x6003, // (0,0)
                         0x6013, // x-axis
                         0x6029, // y-axis
                         0x6045};     
 int32_t heights[4] = {0, 0, 0, 0};                          // anchor z-coordinates in mm
-boolean bProcessing = false;                                // set this to true to output data for the processing sketch         
 
 // only required for manual anchor calibration. 
 // Please change this to the coordinates measured for the anchors
@@ -23,9 +22,6 @@ int32_t anchors_x[4] = {0, 10000, 1000, 9000};              // anchor x-coorinda
 int32_t anchors_y[4] = {0, 0, 7000, 8000};                  // anchor y-coordinates in mm
 
 ////////////////// MAVLINK Prams //////////////////////////////
-
-uint8_t mav_system_id = 100;
-uint8_t mav_component_id = 200;
 uint8_t buf[MAVLINK_MSG_ID_GPS_INPUT_LEN];
 int32_t latitude = 0;
 int32_t longitude = 0;
@@ -33,11 +29,7 @@ int32_t longitude = 0;
 // RX TX serial for flight controller ex) Pixhawk
 // https://github.com/PaulStoffregen/AltSoftSerial
 
-uint8_t mavlink_enable = 1; // for debug
-uint8_t rxPin = 10;
-uint8_t txPin = 11;
-
-SoftwareSerial fcboardSerial(rxPin, txPin); 
+SoftwareSerial fcboardSerial(10, 11); // rx, tx
 
 ////////////////////////////////////////////////
 
@@ -47,22 +39,12 @@ void setup()
   fcboardSerial.begin(57600);
   
   if (Pozyx.begin() == POZYX_FAILURE) {
-    Serial.println(F("ERROR: Unable to connect to POZYX shield"));
-    Serial.println(F("Reset required"));
+    Serial.println(("ERR: shield"));
     delay(100);
     abort();
   }
   
-  Serial.println(F("----------POZYX POSITIONING V1.0----------"));
-  Serial.println(F("NOTES:"));
-  Serial.println(F("- No parameters required."));
-  Serial.println();
-  Serial.println(F("- System will auto start calibration"));
-  Serial.println();
-  Serial.println(F("- System will auto start positioning"));
-  Serial.println(F("----------POZYX POSITIONING V1.0----------"));
-  Serial.println();
-  Serial.println(F("Performing auto anchor calibration:"));
+  Serial.println(("V1.0"));
 
   // clear all previous devices in the device list
   Pozyx.clearDevices();
@@ -85,7 +67,7 @@ void setup()
   printCalibrationResult();
   delay(3000);
 
-  Serial.println(F("Starting positioning: "));
+  Serial.println(("Starting: "));
 }
 
 void loop()
@@ -97,76 +79,44 @@ void loop()
   
   if (status == POZYX_SUCCESS) {
     // print out the result
-    if (!bProcessing) {
-      printCoordinates(position);
-    } else {    
-      printCoordinatesProcessing(position);
-    }
+    printCoordinates(position);
 
     // send GPS MAVLINK message
-    if (mavlink_enable) {
-      SendGPSMAVLinkMessage(position);
-    }
+    SendGPSMAVLinkMessage(position);
+  } else {
+    Serial.println("fail");
   }
 }
 
 // function to print the coordinates to the serial monitor
 void printCoordinates(coordinates_t coor)
 {  
-  Serial.print("x_mm: ");
+  Serial.print("x:");
   Serial.print(coor.x);
-  Serial.print("\t");
-  Serial.print("y_mm: ");
+  print_tab();
+  Serial.print("y:");
   Serial.print(coor.y);
-  Serial.print("\t");
-  Serial.print("z_mm: ");
+  print_tab();
+  Serial.print("z:");
   Serial.print(coor.z);
+  print_tab();
+  Serial.print("lat:");
+  Serial.print(latitude);
+  print_tab();
+  Serial.print("lng:");
+  Serial.print(longitude);
+  print_tab();
   Serial.println(); 
 }
 
-// function to print out positoining data + ranges for the processing sketch
-void printCoordinatesProcessing(coordinates_t coor)
-{
-  // get the network id and print it
-  uint16_t network_id;
-  Pozyx.getNetworkId(&network_id);
-  
-  Serial.print("POS,0x");
-  Serial.print(network_id,HEX);
-  Serial.print(",");
-  Serial.print(coor.x);
-  Serial.print(",");
-  Serial.print(coor.y);
-  Serial.print(",");
-  Serial.print(coor.z);
-  Serial.print(",");
-  
-  // get information about the positioning error and print it
-  pos_error_t pos_error;
-  Pozyx.getPositionError(&pos_error);
-    
-  Serial.print(pos_error.x);
-  Serial.print(",");
-  Serial.print(pos_error.y);
-  Serial.print(",");
-  Serial.print(pos_error.z);
-  Serial.print(",");
-  Serial.print(pos_error.xy);
-  Serial.print(",");
-  Serial.print(pos_error.xz);
-  Serial.print(",");
-  Serial.print(pos_error.yz); 
-  
-  // read out the ranges to each anchor and print it 
-  for (int i=0; i<num_anchors; i++) {
-    device_range_t range;
-    Pozyx.getDeviceRangeInfo(anchors[i], &range);
+void print_comma()
+{  
     Serial.print(",");
-    Serial.print(range.distance);  
-    Serial.print(",");
-    Serial.print(range.RSS); 
-  }
-  Serial.println();
+}
+
+void print_tab()
+{  
+    Serial.print("\t");
 }
 
 #define LOCATION_SCALING_FACTOR_INV_MM 0.008983204953368922f
@@ -208,11 +158,11 @@ void printCalibrationResult()
   int status;
 
   status = Pozyx.getDeviceListSize(&list_size);
-  Serial.print("list size: ");
+  Serial.print("list: ");
   Serial.println(status*list_size);
   
   if (list_size == 0) {
-    Serial.println("Calibration failed.");
+    Serial.println("Cal fail.");
     Serial.println(Pozyx.getSystemError());
     return;
   }
@@ -220,22 +170,21 @@ void printCalibrationResult()
   uint16_t device_ids[list_size];
   status &= Pozyx.getDeviceIds(device_ids,list_size);
   
-  Serial.println(F("Calibration result:"));
-  Serial.print(F("Anchors found: "));
+  Serial.println(("Cal:"));
+  Serial.print(("Anchors found: "));
   Serial.println(list_size);
   
   coordinates_t anchor_coor;
   
   for (int i=0; i<list_size; i++) {
-    Serial.print("ANCHOR,");
-    Serial.print("0x");
+    Serial.print("A0x");
     Serial.print(device_ids[i], HEX);
-    Serial.print(",");    
+    print_comma();
     status = Pozyx.getDeviceCoordinates(device_ids[i], &anchor_coor);
     Serial.print(anchor_coor.x);
-    Serial.print(",");
+    print_comma();
     Serial.print(anchor_coor.y);
-    Serial.print(",");
+    print_comma();
     Serial.println(anchor_coor.z);
     
   }    
@@ -246,7 +195,7 @@ void SetAnchorsManual()
 {
   int i=0;
   
-  for (i=0; i<num_anchors; i++) {
+  for (i=0; i<NUM_ANCHORS; i++) {
    device_coordinates_t anchor;
    anchor.network_id = anchors[i];
    anchor.flag = 0x1; 
@@ -289,8 +238,7 @@ void SendGPSMAVLinkMessage(coordinates_t position)
  * @param satellites_visible Number of satellites visible.
  * @return length of the message in bytes (excluding serial stream start sign)
  */
-  uint64_t time_usec = micros();
-  uint8_t gps_id = 0;
+ 
   uint16_t ignore_flags = GPS_INPUT_IGNORE_FLAG_HDOP|
                           GPS_INPUT_IGNORE_FLAG_VDOP|
                           GPS_INPUT_IGNORE_FLAG_VEL_HORIZ|
@@ -300,42 +248,38 @@ void SendGPSMAVLinkMessage(coordinates_t position)
                           GPS_INPUT_IGNORE_FLAG_VERTICAL_ACCURACY;
   uint32_t time_week_ms = 0;
   uint16_t time_week = 0;
-  uint8_t fix_type = 3;                 // GPS_OK_FIX_3D;
-  int32_t latitude = 35.692941*1.0e7;   // sample
-  int32_t longitude = 139.776500*1.0e7; // sample
-  int32_t altitude = 10;                // unit m
-  float hdop = 0.0f;
-  float vdop = 0.0f;
-  float vn = 0.0f;
-  float ve = 0.0f;
-  float vd = 0.0f;
-  float speed_accuracy = 0.0f;
-  float horiz_accuracy = 0.0f;
-  float vert_accuracy = 0.0f;
-  uint8_t satellites_visible = 10;      // fake
 
   make_gps_time(time_week_ms, time_week);
-  
+
   // adjust position
   latitude = 36.3243014 * 1.0e7;
   longitude = 138.6370934 * 1.0e7;
   location_offset(latitude, longitude, position.y, position.x);
 
   uint16_t len = mavlink_msg_gps_input_pack(
-                    mav_system_id,
-                    mav_component_id,
+                    1,
+                    0,
                     &msg,
-                    time_usec,
-                    gps_id,
+                    micros(),       // time_usec,
+                    0,              // gps_id,
                     ignore_flags,
-                    time_week_ms, time_week,
-                    fix_type,
-                    latitude, longitude, altitude,
-                    hdop, vdop,
-                    vn, ve, vd,
-                    speed_accuracy, horiz_accuracy, vert_accuracy,
-                    satellites_visible);
-                    
+                    time_week_ms,   // time_week_ms,
+                    time_week,      // time_week,
+                    3,              // fix_type,
+                    latitude,       // latitude,
+                    longitude,      // longitude,
+                    10,             // altitude,
+                    1.0f,           // hdop,
+                    1.0f,           // vdop,
+                    0.0f,           // vn
+                    0.0f,           // ve
+                    0.0f,           // vd
+                    0.0f,           // speed_accuracy
+                    0.0f,           // horiz_accuracy
+                    0.0f,           // vert_accuracy,
+                    14              // satellites_visible
+                    );
+
   // Copy the message to send buffer 
   len = mavlink_msg_to_send_buffer(buf, &msg);
   
