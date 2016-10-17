@@ -1,25 +1,30 @@
+#include <Time.h>
+#include <TimeLib.h>
+
 #include <Pozyx.h>
 #include <Pozyx_definitions.h>
 
-#include <mavlink.h>
+/*//#include <mavlink.h>*/
+#include "C:\Users\rmackay9\Documents\GitHub\ardupilot\Build.ArduCopter\libraries\GCS_MAVLink\include\mavlink\v2.0\common\mavlink.h"
 #include <SoftwareSerial.h>
 #include <Wire.h>
-#include <Time.h> // download from https://github.com/PaulStoffregen/Time
+/*#include <Time.h> // download from https://github.com/PaulStoffregen/Time */
+//#include "C:\Users\rmackay9\Documents\GitHub\Time\Time.h"
 
 ////////////////// Pozyx Prams //////////////////////////////
 
 #define NUM_ANCHORS 4
 // the network id of the anchors: change these to the network ids of your anchors.
-uint16_t anchors[4] = { 0x6003, // (0,0)
-                        0x6013, // x-axis
-                        0x6029, // y-axis
-                        0x6045};     
-int32_t heights[4] = {0, 0, 0, 0};                          // anchor z-coordinates in mm
+uint16_t anchors[4] = { 0x601C, // (0,0)
+                        0x6020, // x-axis
+                        0x6057, // y-axis
+                        0x605E};     
 
 // only required for manual anchor calibration. 
 // Please change this to the coordinates measured for the anchors
-int32_t anchors_x[4] = {0, 10000, 1000, 9000};              // anchor x-coorindates in mm
-int32_t anchors_y[4] = {0, 0, 7000, 8000};                  // anchor y-coordinates in mm
+int32_t anchors_x[NUM_ANCHORS] = {0, 2700, 0,    2700};    // anchor x-coorindates in mm (horizontal)
+int32_t anchors_y[NUM_ANCHORS] = {0, 0,    3400, 3400};    // anchor y-coordinates in mm (vertical)
+int32_t heights[NUM_ANCHORS] =   {0, -740, 530,  170};     // anchor z-coordinates in mm
 
 ////////////////// MAVLINK Prams //////////////////////////////
 uint8_t buf[MAVLINK_MSG_ID_GPS_INPUT_LEN];
@@ -50,22 +55,23 @@ void setup()
   Pozyx.clearDevices();
      
   //int status = Pozyx.doAnchorCalibration(POZYX_2_5D, 10, num_anchors, anchors, heights);
-  int status = Pozyx.doAnchorCalibration(POZYX_2D, 10, num_anchors, anchors, heights);
+  /*int status = Pozyx.doAnchorCalibration(POZYX_2D, 10, num_anchors, anchors, heights);
   if (status != POZYX_SUCCESS) {
     Serial.println(status);
-    Serial.println(F("ERROR: calibration"));
-    Serial.println(F("Reset required"));
+    Serial.println(("ERROR: calibration"));
+    Serial.println(("Reset required"));
     delay(100);
     abort();
-  }
+  }*/
   
   // if the automatic anchor calibration is unsuccessful, try manually setting the anchor coordinates.
   // fot this, you must update the arrays anchors_x, anchors_y and heights above
   // comment out the doAnchorCalibration block and the if-statement above if you are using manual mode
-  //SetAnchorsManual();
+  SetAnchorsManual();
 
   printCalibrationResult();
-  delay(3000);
+  Serial.println(("Waiting.."));
+  delay(5000);
 
   Serial.println(("Starting: "));
 }
@@ -74,8 +80,8 @@ void loop()
 {  
   coordinates_t position;
   
-  //int status = Pozyx.doPositioning(&position, POZYX_2_5D, 1000);
-  int status = Pozyx.doPositioning(&position);
+  int status = Pozyx.doPositioning(&position, POZYX_2_5D, 1000);
+  //int status = Pozyx.doPositioning(&position);
   
   if (status == POZYX_SUCCESS) {
     // print out the result
