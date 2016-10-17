@@ -26,6 +26,7 @@ int32_t anchors_y[4] = {0, 0, 7000, 8000};                  // anchor y-coordina
 
 uint8_t mav_system_id = 100;
 uint8_t mav_component_id = 200;
+uint8_t buf[MAVLINK_MSG_ID_GPS_INPUT_LEN];
 int32_t latitude = 0;
 int32_t longitude = 0;
 
@@ -261,7 +262,6 @@ void SendGPSMAVLinkMessage(coordinates_t position)
 {
   // Initialize the required buffers 
   mavlink_message_t msg; 
-  uint8_t buf[MAVLINK_MAX_PACKET_LEN];
   
   /**
  * @brief Pack a gps_input message
