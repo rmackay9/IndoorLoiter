@@ -166,6 +166,38 @@ void printCoordinatesProcessing(coordinates_t coor)
   Serial.println();
 }
 
+#define LOCATION_SCALING_FACTOR_INV_MM 0.008983204953368922f
+#define DEG_TO_RAD      (M_PI / 180.0f)
+
+float longitude_scale(uint32_t lat)
+{
+    static int32_t last_lat = 0;
+    static float scale = 1.0;
+    if (labs(last_lat - lat) < 100000) {
+        // we are within 0.01 degrees (about 1km) of the
+        // previous latitude. We can avoid the cos() and return
+        // the same scale factor.
+        return scale;
+    }
+    scale = cosf(lat * 1.0e-7f * DEG_TO_RAD);
+    if (scale < 0.01f) {
+      scale = 0.01f;
+    }
+    if (scale > 1.0f) {
+      scale = 1.0f;
+    }
+    last_lat = lat;
+    return scale;
+}
+
+void location_offset(int32_t &lat, int32_t &lng, uint32_t offset_north_mm, uint32_t offset_east_mm)
+{
+    int32_t dlat = offset_north_mm * LOCATION_SCALING_FACTOR_INV_MM;
+    int32_t dlng = (offset_east_mm * LOCATION_SCALING_FACTOR_INV_MM) / longitude_scale(lat);
+    lat += dlat;
+    lng += dlng;
+}
+
 // print out the anchor coordinates (also required for the processing sketch)
 void printCalibrationResult()
 {
