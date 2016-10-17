@@ -26,6 +26,8 @@ int32_t anchors_y[4] = {0, 0, 7000, 8000};                  // anchor y-coordina
 
 uint8_t mav_system_id = 100;
 uint8_t mav_component_id = 200;
+int32_t latitude = 0;
+int32_t longitude = 0;
 
 // RX TX serial for flight controller ex) Pixhawk
 // https://github.com/PaulStoffregen/AltSoftSerial
@@ -314,6 +316,11 @@ void SendGPSMAVLinkMessage(coordinates_t position)
 
   make_gps_time(time_week_ms, time_week);
   
+  // adjust position
+  latitude = 36.3243014 * 1.0e7;
+  longitude = 138.6370934 * 1.0e7;
+  location_offset(latitude, longitude, position.y, position.x);
+
   uint16_t len = mavlink_msg_gps_input_pack(
                     mav_system_id,
                     mav_component_id,
