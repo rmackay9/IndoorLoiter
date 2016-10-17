@@ -40,8 +40,8 @@ SoftwareSerial fcboardSerial(rxPin, txPin);
 
 void setup()
 {
-  Serial.begin(9600);
-  fcboardSerial.begin(9600);
+  Serial.begin(115200);
+  fcboardSerial.begin(57600);
   
   if (Pozyx.begin() == POZYX_FAILURE) {
     Serial.println(F("ERROR: Unable to connect to POZYX shield"));
