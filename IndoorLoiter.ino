@@ -27,6 +27,8 @@ int32_t anchors_y[NUM_ANCHORS] = {0, 0,    3400, 3400};    // anchor y-coordinat
 int32_t heights[NUM_ANCHORS] =   {0, -740, 530,  170};     // anchor z-coordinates in mm
 
 ////////////////// MAVLINK Prams //////////////////////////////
+#define LATITUDE_BASE (36.324187 * 1.0e7)
+#define LONGITUDE_BASE (138.639212 * 1.0e7)
 uint8_t buf[MAVLINK_MSG_ID_GPS_INPUT_LEN];
 int32_t latitude = 0;
 int32_t longitude = 0;
@@ -258,8 +260,8 @@ void SendGPSMAVLinkMessage(coordinates_t position)
   make_gps_time(time_week_ms, time_week);
 
   // adjust position
-  latitude = 36.3243014 * 1.0e7;
-  longitude = 138.6370934 * 1.0e7;
+  latitude = LATITUDE_BASE;
+  longitude = LONGITUDE_BASE;
   location_offset(latitude, longitude, position.y, position.x);
 
   uint16_t len = mavlink_msg_gps_input_pack(
