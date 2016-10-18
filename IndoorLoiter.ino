@@ -22,9 +22,9 @@ uint16_t anchors[4] = { 0x601C, // (0,0)
 
 // only required for manual anchor calibration. 
 // Please change this to the coordinates measured for the anchors
-int32_t anchors_x[NUM_ANCHORS] = {0, 2700, 0,    2700};    // anchor x-coorindates in mm (horizontal)
-int32_t anchors_y[NUM_ANCHORS] = {0, 0,    3400, 3400};    // anchor y-coordinates in mm (vertical)
-int32_t heights[NUM_ANCHORS] =   {0, -740, 530,  170};     // anchor z-coordinates in mm
+int32_t anchors_x[NUM_ANCHORS] = {0,    18600, 0,     18600};    // anchor x-coorindates in mm (horizontal)
+int32_t anchors_y[NUM_ANCHORS] = {0,    0,     10000, 10000};    // anchor y-coordinates in mm (vertical)
+int32_t heights[NUM_ANCHORS] =   {1420, 0,     0,     1450};     // anchor z-coordinates in mm
 
 ////////////////// MAVLINK Prams //////////////////////////////
 #define LATITUDE_BASE (36.324187 * 1.0e7)
