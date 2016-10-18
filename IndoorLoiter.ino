@@ -247,9 +247,7 @@ void SendGPSMAVLinkMessage(coordinates_t position)
  * @return length of the message in bytes (excluding serial stream start sign)
  */
  
-  uint16_t ignore_flags = GPS_INPUT_IGNORE_FLAG_HDOP|
-                          GPS_INPUT_IGNORE_FLAG_VDOP|
-                          GPS_INPUT_IGNORE_FLAG_VEL_HORIZ|
+  uint16_t ignore_flags = GPS_INPUT_IGNORE_FLAG_VEL_HORIZ|
                           GPS_INPUT_IGNORE_FLAG_VEL_VERT|
                           GPS_INPUT_IGNORE_FLAG_SPEED_ACCURACY|
                           GPS_INPUT_IGNORE_FLAG_HORIZONTAL_ACCURACY|
