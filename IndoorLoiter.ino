@@ -119,7 +119,7 @@ void print_tab()
     Serial.print("\t");
 }
 
-#define LOCATION_SCALING_FACTOR_INV_MM 0.008983204953368922f
+#define LOCATION_SCALING_FACTOR_INV_MM 0.08983204953368922f
 #define DEG_TO_RAD      (M_PI / 180.0f)
 
 float longitude_scale(uint32_t lat)
@@ -143,7 +143,7 @@ float longitude_scale(uint32_t lat)
     return scale;
 }
 
-void location_offset(int32_t &lat, int32_t &lng, uint32_t offset_north_mm, uint32_t offset_east_mm)
+void location_offset(int32_t &lat, int32_t &lng, int32_t offset_north_mm, int32_t offset_east_mm)
 {
     int32_t dlat = offset_north_mm * LOCATION_SCALING_FACTOR_INV_MM;
     int32_t dlng = (offset_east_mm * LOCATION_SCALING_FACTOR_INV_MM) / longitude_scale(lat);
