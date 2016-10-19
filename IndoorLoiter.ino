@@ -22,11 +22,13 @@ uint16_t anchors[4] = { 0x601C, // (0,0)
 
 // only required for manual anchor calibration. 
 // Please change this to the coordinates measured for the anchors
-int32_t anchors_x[NUM_ANCHORS] = {0, 2700, 0,    2700};    // anchor x-coorindates in mm (horizontal)
-int32_t anchors_y[NUM_ANCHORS] = {0, 0,    3400, 3400};    // anchor y-coordinates in mm (vertical)
-int32_t heights[NUM_ANCHORS] =   {0, -740, 530,  170};     // anchor z-coordinates in mm
+int32_t anchors_x[NUM_ANCHORS] = {0,    18600, 0,     18600};    // anchor x-coorindates in mm (horizontal)
+int32_t anchors_y[NUM_ANCHORS] = {0,    0,     10000, 10000};    // anchor y-coordinates in mm (vertical)
+int32_t heights[NUM_ANCHORS] =   {1420, 0,     0,     1450};     // anchor z-coordinates in mm
 
 ////////////////// MAVLINK Prams //////////////////////////////
+#define LATITUDE_BASE (36.324187 * 1.0e7)
+#define LONGITUDE_BASE (138.639212 * 1.0e7)
 uint8_t buf[MAVLINK_MSG_ID_GPS_INPUT_LEN];
 int32_t latitude = 0;
 int32_t longitude = 0;
@@ -125,7 +127,7 @@ void print_tab()
     Serial.print("\t");
 }
 
-#define LOCATION_SCALING_FACTOR_INV_MM 0.008983204953368922f
+#define LOCATION_SCALING_FACTOR_INV_MM 0.08983204953368922f
 #define DEG_TO_RAD      (M_PI / 180.0f)
 
 float longitude_scale(uint32_t lat)
@@ -149,7 +151,7 @@ float longitude_scale(uint32_t lat)
     return scale;
 }
 
-void location_offset(int32_t &lat, int32_t &lng, uint32_t offset_north_mm, uint32_t offset_east_mm)
+void location_offset(int32_t &lat, int32_t &lng, int32_t offset_north_mm, int32_t offset_east_mm)
 {
     int32_t dlat = offset_north_mm * LOCATION_SCALING_FACTOR_INV_MM;
     int32_t dlng = (offset_east_mm * LOCATION_SCALING_FACTOR_INV_MM) / longitude_scale(lat);
@@ -245,9 +247,7 @@ void SendGPSMAVLinkMessage(coordinates_t position)
  * @return length of the message in bytes (excluding serial stream start sign)
  */
  
-  uint16_t ignore_flags = GPS_INPUT_IGNORE_FLAG_HDOP|
-                          GPS_INPUT_IGNORE_FLAG_VDOP|
-                          GPS_INPUT_IGNORE_FLAG_VEL_HORIZ|
+  uint16_t ignore_flags = GPS_INPUT_IGNORE_FLAG_VEL_HORIZ|
                           GPS_INPUT_IGNORE_FLAG_VEL_VERT|
                           GPS_INPUT_IGNORE_FLAG_SPEED_ACCURACY|
                           GPS_INPUT_IGNORE_FLAG_HORIZONTAL_ACCURACY|
@@ -258,8 +258,8 @@ void SendGPSMAVLinkMessage(coordinates_t position)
   make_gps_time(time_week_ms, time_week);
 
   // adjust position
-  latitude = 36.3243014 * 1.0e7;
-  longitude = 138.6370934 * 1.0e7;
+  latitude = LATITUDE_BASE;
+  longitude = LONGITUDE_BASE;
   location_offset(latitude, longitude, position.y, position.x);
 
   uint16_t len = mavlink_msg_gps_input_pack(
