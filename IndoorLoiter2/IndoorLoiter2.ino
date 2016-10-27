@@ -5,6 +5,7 @@
 #include <Wire.h>
 
 ////////////////// Pozyx Prams //////////////////////////////
+#define CONFIG_TX_GAIN 33.5f
 
 #define NUM_ANCHORS 4
 // the network id of the anchors: change these to the network ids of your anchors.
@@ -15,9 +16,9 @@ uint16_t anchor_id[4] = { 0x601C, // (0,0)
 
 // only required for manual anchor calibration. 
 // Please change this to the coordinates measured for the anchors
-int32_t anchors_x[NUM_ANCHORS] = {0,    18600, 0,     18600};    // anchor x-coorindates in mm (horizontal)
+int32_t anchors_x[NUM_ANCHORS] = {0,    10000, 0,     10000};    // anchor x-coorindates in mm (horizontal)
 int32_t anchors_y[NUM_ANCHORS] = {0,    0,     10000, 10000};    // anchor y-coordinates in mm (vertical)
-int32_t heights[NUM_ANCHORS] =   {1420, 0,     0,     1450};     // anchor z-coordinates in mm
+int32_t heights[NUM_ANCHORS] =   {0,    0,     0,     0};        // anchor z-coordinates in mm
 
 // RX TX serial for flight controller ex) Pixhawk
 // https://github.com/PaulStoffregen/AltSoftSerial
@@ -73,6 +74,11 @@ void setup()
     // clear all previous devices in the device list
     Pozyx.clearDevices();
 
+    // configure beacons
+    while (!configure_beacons()) {
+        delay(1000);
+    }
+
     // if the automatic anchor calibration is unsuccessful, try manually setting the anchor coordinates.
     // fot this, you must update the arrays anchors_x, anchors_y and heights above
     // comment out the doAnchorCalibration block and the if-statement above if you are using manual mode
@@ -90,14 +96,13 @@ void loop()
 {
     static uint8_t counter = 0;
     counter++;
-    if (counter >= 6) {
+    if (counter >= 100) {
         counter = 0;
         send_beacon_config();
     }
-    //get_ranges();
+    get_ranges();
     get_position();
-    //send_beacon_config();
-    delay(5000);
+    //delay(5000);
 }
 
 void print_comma()
@@ -108,6 +113,134 @@ void print_comma()
 void print_tab()
 {  
     Serial.print("\t");
+}
+
+// set a tag or anchor's gain
+//   set tag_id to zero to set local device's gain
+//   returns true on success
+bool set_device_gain(uint16_t dev_id, float gain)
+{
+    float tx_power = -1;
+
+    // get/set transmit power of tag
+    bool gain_ok = false;
+    uint8_t retry = 0;
+    while (!gain_ok && retry < 5) {
+        if (Pozyx.getTxPower(&tx_power, dev_id) == POZYX_SUCCESS) {
+            if (tx_power != gain) {
+                Pozyx.setTxPower(CONFIG_TX_GAIN, dev_id);
+            } else {
+                gain_ok = true;
+            }
+        }
+        retry++;
+    }
+
+    // display final gain
+    Serial.print("Dev ");
+    Serial.print(dev_id, HEX);
+    Serial.print(" gain ");
+    if (tx_power > 0) {
+        Serial.print(tx_power);
+    } else {
+        Serial.print("unknown");
+    }
+    Serial.print(" (retry ");
+    Serial.print(retry);
+    Serial.print(")");
+    Serial.println();
+
+    return gain_ok;
+}
+
+// performs repeated calls to get reliable distance between devices
+bool get_remote_range(uint16_t dev1, uint16_t dev2, int32_t& range)
+{
+    // set distances between tags
+    uint32_t range_tot = 0;
+    uint16_t count = 0;
+    device_range_t dev_range;
+    for (uint8_t i=0; i <= 10; i++) {
+        // origin to 1st
+        if (Pozyx.doRemoteRanging(dev1, dev2, &dev_range) == POZYX_SUCCESS) {
+            range_tot += dev_range.distance;
+            count++;
+            Serial.print(dev1,HEX);
+            Serial.print("->");
+            Serial.print(dev2,HEX);
+            Serial.print(":");
+            Serial.println(dev_range.distance);
+        }
+        if (Pozyx.doRemoteRanging(dev2, dev1, &dev_range) == POZYX_SUCCESS) {
+            range_tot += dev_range.distance;
+            count++;
+            Serial.print(dev2,HEX);
+            Serial.print("->");
+            Serial.print(dev1,HEX);
+            Serial.print(":");
+            Serial.println(dev_range.distance);
+        }
+    }
+    // success if at least 5 successful ranges were retrieved
+    if (count > 5) {
+        range = range_tot / count;
+        return true;
+    }
+    return false;
+}
+
+void set_beacon_position(uint8_t index, int32_t x_mm, int32_t y_mm, int32_t z_mm)
+{
+    anchors_x[index] = x_mm;
+    anchors_y[index] = y_mm;
+    heights[index] = z_mm;
+}
+
+// configure beacons
+bool configure_beacons()
+{
+    bool configured_ok = true;
+
+    // get/set transmit power of tag
+    if (!set_device_gain(0, CONFIG_TX_GAIN)) {
+        configured_ok = false;
+    }
+
+    // set transmit power of beacons    
+    for (uint8_t i=0; i < NUM_ANCHORS; i++) {
+        if (!set_device_gain(anchor_id[i], CONFIG_TX_GAIN)) {
+            configured_ok = false;
+        }
+    }
+
+    // set distances between tags
+    int32_t x_range = 0, y_range = 0;
+    // origin to x-axis (i.e. bottom right)
+    if (get_remote_range(anchor_id[0], anchor_id[1], x_range)) {
+        set_beacon_position(1, x_range, 0, 0);
+    } else {
+        configured_ok = false;
+    }
+    // origin to y-axis (i.e. top left)
+    if (get_remote_range(anchor_id[0], anchor_id[2], y_range)) {
+        set_beacon_position(2, 0, y_range, 0);
+    } else {
+        configured_ok = false;
+    }
+    // top right
+    if (x_range != 0 && y_range != 0) {
+        set_beacon_position(3, x_range, y_range, 0);
+    } else {
+        configured_ok = false;
+    }
+
+    if (configured_ok) {
+        Serial.println("Beacon Configuration complete");
+    } else {
+        Serial.println("Beacon Configuration failed!");
+    }
+
+    return configured_ok;
 }
 
 // function to manually set the anchor coordinates
@@ -197,19 +330,15 @@ void get_ranges()
     bool success = false;
     for (uint8_t i=0; i<NUM_ANCHORS; i++) {
         if (Pozyx.doRanging(anchor_id[i], &range) == POZYX_SUCCESS) {
-            Serial.print(range.timestamp);
-            Serial.print("ms \t");
-            Serial.print(range.distance); 
-            Serial.println("mm \t");
-            success = true;
             // send info to ardupilot
             send_beacon_distance(i, range.distance);
+            success = true;
         }
     }
 
     // display errors
     if (!success) {
-        Serial.println("fail");
+        Serial.println("failed to get any ranges");
     }
 }
 
@@ -219,7 +348,8 @@ void get_position()
     coordinates_t position;
     pos_error_t pos_error;
 
-    if (Pozyx.doPositioning(&position, POZYX_2_5D, 1000) == POZYX_SUCCESS) {
+    //if (Pozyx.doPositioning(&position, POZYX_2_5D, 0) == POZYX_SUCCESS) {
+    if (Pozyx.doPositioning(&position, POZYX_2D, 0, 0x00) == POZYX_SUCCESS) {
         if (Pozyx.getPositionError(&pos_error) == POZYX_SUCCESS) {
             // display position
             print_coordinates(position, pos_error);
@@ -295,10 +425,10 @@ void send_message(uint8_t msg_id, uint8_t data_len, uint8_t data_buf[])
     num_sent += fcboardSerial.write(data_buf, data_len);
     num_sent += fcboardSerial.write(&checksum, 1);
     fcboardSerial.flush();
-    Serial.print("Sent:");
-    Serial.print(num_sent);
-    Serial.print(" data_len:");
-    Serial.println(data_len);
+    //Serial.print("Sent:");
+    //Serial.print(num_sent);
+    //Serial.print(" data_len:");
+    //Serial.println(data_len);
 }
 
 // GPS MAVLink message using Pozyx potision
