@@ -373,7 +373,12 @@ void send_beacon_distance(uint8_t beacon_id, uint32_t distance_mm)
 void send_vehicle_position(coordinates_t& position, pos_error_t& pos_error)
 {
     vehicle_position_msg msg;
-    
+
+    // sanity check position
+    if (position.x == 0 || position.y == 0) {
+        return;
+    }
+
     msg.info.x = position.x;
     msg.info.y = position.y;
     msg.info.z = position.z;
