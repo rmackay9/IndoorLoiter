@@ -140,6 +140,18 @@ void loop()
     beacon_sent_count++;
 }
 
+uint32_t time_start_ms;
+void timer_start()
+{
+    time_start_ms = millis();
+}
+void timer_end()
+{
+    uint32_t time_diff = millis() - time_start_ms;
+    Serial.print("ms:");
+    Serial.println(time_diff);
+}
+
 void print_comma()
 {  
     Serial.print(",");
@@ -346,11 +358,16 @@ void get_ranges()
     device_range_t range;
     bool success = false;
     for (uint8_t i=0; i<NUM_ANCHORS; i++) {
+        // debug
+        //timer_start();
         if (Pozyx.doRanging(anchor_id[i], &range) == POZYX_SUCCESS) {
             // send info to ardupilot
             send_beacon_distance(i, range.distance);
             success = true;
         }
+        // debug
+        //Serial.print("bd ");
+        //timer_end();
     }
 
     // display errors
