@@ -285,7 +285,7 @@ void SetAnchorsManual()
 // print coordinates to the serial monitor
 void print_coordinates(coordinates_t coor, pos_error_t pos_error)
 {  
-    Serial.print("x:");
+    Serial.print("Pos x:");
     Serial.print(coor.x);
     print_tab();
     Serial.print("y:");
@@ -390,9 +390,8 @@ void send_beacon_config()
         msg.info.y = anchors_y[i];
         msg.info.z = heights[i];
         send_message(MSGID_BEACON_CONFIG, sizeof(msg.buf), msg.buf);
-        Serial.print("Sent anchor info:");
-        Serial.println(i);
     }
+    Serial.println("Sent anchor info");
 }
 
 // send a beacon's distance to ardupilot
