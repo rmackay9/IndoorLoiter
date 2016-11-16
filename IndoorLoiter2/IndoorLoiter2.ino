@@ -16,9 +16,9 @@ uint16_t anchor_id[4] = { 0x601C, // (0,0)
 
 // only required for manual anchor calibration. 
 // Please change this to the coordinates measured for the anchors
-int32_t anchors_x[NUM_ANCHORS] = {0,    10000, 0,     10000};    // anchor x-coorindates in mm (horizontal)
-int32_t anchors_y[NUM_ANCHORS] = {0,    0,     10000, 10000};    // anchor y-coordinates in mm (vertical)
-int32_t heights[NUM_ANCHORS] =   {0,    0,     0,     0};        // anchor z-coordinates in mm
+int32_t anchors_x[NUM_ANCHORS] = {0,     10000, 0,     10000};    // anchor x-coorindates in mm (horizontal)
+int32_t anchors_y[NUM_ANCHORS] = {0,     0,     10000, 10000};    // anchor y-coordinates in mm (vertical)
+int32_t heights[NUM_ANCHORS] =   {-1200, -1200, -1200, -1200};    // anchor z-coordinates in mm (1.2m above vehicle's starting altitude)
 
 // RX TX serial for flight controller ex) Pixhawk
 // https://github.com/PaulStoffregen/AltSoftSerial
@@ -217,19 +217,19 @@ bool configure_beacons()
     int32_t x_range = 0, y_range = 0;
     // origin to x-axis (i.e. bottom right)
     if (get_remote_range(anchor_id[0], anchor_id[1], x_range)) {
-        set_beacon_position(1, x_range, 0, 0);
+        set_beacon_position(1, x_range, 0, heights[1]);
     } else {
         configured_ok = false;
     }
     // origin to y-axis (i.e. top left)
     if (get_remote_range(anchor_id[0], anchor_id[2], y_range)) {
-        set_beacon_position(2, 0, y_range, 0);
+        set_beacon_position(2, 0, y_range, heights[2]);
     } else {
         configured_ok = false;
     }
     // top right
     if (x_range != 0 && y_range != 0) {
-        set_beacon_position(3, x_range, y_range, 0);
+        set_beacon_position(3, x_range, y_range, heights[3]);
     } else {
         configured_ok = false;
     }
