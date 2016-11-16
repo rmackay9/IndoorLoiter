@@ -165,20 +165,10 @@ bool get_remote_range(uint16_t dev1, uint16_t dev2, int32_t& range)
         if (Pozyx.doRemoteRanging(dev1, dev2, &dev_range) == POZYX_SUCCESS) {
             range_tot += dev_range.distance;
             count++;
-            Serial.print(dev1,HEX);
-            Serial.print("->");
-            Serial.print(dev2,HEX);
-            Serial.print(":");
-            Serial.println(dev_range.distance);
         }
         if (Pozyx.doRemoteRanging(dev2, dev1, &dev_range) == POZYX_SUCCESS) {
             range_tot += dev_range.distance;
             count++;
-            Serial.print(dev2,HEX);
-            Serial.print("->");
-            Serial.print(dev1,HEX);
-            Serial.print(":");
-            Serial.println(dev_range.distance);
         }
     }
     // success if at least 5 successful ranges were retrieved
@@ -272,14 +262,6 @@ void print_coordinates(coordinates_t coor, pos_error_t pos_error)
     Serial.print(pos_error.x);
     Serial.print(" y:");
     Serial.print(pos_error.y);
-    Serial.print(" z:");
-    Serial.print(pos_error.z);
-    Serial.print(" covxy:");
-    Serial.print(pos_error.xy);
-    Serial.print(" covxz:");
-    Serial.print(pos_error.xz);
-    Serial.print(" covxy:");
-    Serial.print(pos_error.xy);
     Serial.println(); 
 }
 
@@ -429,16 +411,5 @@ void send_message(uint8_t msg_id, uint8_t data_len, uint8_t data_buf[])
     //Serial.print(num_sent);
     //Serial.print(" data_len:");
     //Serial.println(data_len);
-}
-
-// GPS MAVLink message using Pozyx potision
-void SendMessage(coordinates_t position)
-{
-
-  // Copy the message to send buffer 
-  uint8_t len = 0;
-
-  // Send message
-  //fcboardSerial.write(buf, len);
 }
 
