@@ -331,7 +331,7 @@ void get_position()
     pos_error_t pos_error;
 
     //if (Pozyx.doPositioning(&position, POZYX_2_5D, 0) == POZYX_SUCCESS) {
-    if (Pozyx.doPositioning(&position, POZYX_2D, 0, 0x00) == POZYX_SUCCESS) {
+    if (Pozyx.doPositioning(&position, POZYX_3D, 0, 0x00) == POZYX_SUCCESS) {
         if (Pozyx.getPositionError(&pos_error) == POZYX_SUCCESS) {
             // display position
             print_coordinates(position, pos_error);
