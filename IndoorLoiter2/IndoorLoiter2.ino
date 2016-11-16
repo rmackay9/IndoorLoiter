@@ -94,15 +94,50 @@ void setup()
 
 void loop()
 {
+    static uint32_t loop_start = 0;
+    static uint8_t stage = 0;   // 0 = initialisation, 1 = normal flight
+    static uint16_t beacon_sent_count = 0;
+    static uint32_t beacon_sent_time = 0;
+
+    // initialise start time
+    if (loop_start == 0) {
+        loop_start = millis();
+    }
+
+    // advance to normal flight stage after 1min
+    if (stage == 0) {
+        uint32_t time_diff =  (millis() - loop_start);
+        if (time_diff > 60000) {
+            stage = 1;
+            Serial.println("Stage1");
+        }
+    }
+
+    // slow down counter
     static uint8_t counter = 0;
     counter++;
-    if (counter >= 100) {
+    if (counter >= 20) {
         counter = 0;
-        send_beacon_config();
     }
+
+    // during stage 0 (init) send position and beacon config as quickly as possible
+    // during stage 1 send about every 2 seconds
+    if (stage == 0 || counter == 0) {
+        send_beacon_config();
+        get_position();
+        if (beacon_sent_count > 0 && beacon_sent_time != 0) {
+            uint32_t time_diff = millis() - beacon_sent_time;
+            float hz = (float)beacon_sent_count / (time_diff / 1000.0f);
+            Serial.print("Beacon hz:");
+            Serial.println(hz);
+        }
+        beacon_sent_count = 0;
+        beacon_sent_time = millis();
+    }
+
+    // send beacon distances
     get_ranges();
-    get_position();
-    //delay(5000);
+    beacon_sent_count++;
 }
 
 void print_comma()
