@@ -381,7 +381,8 @@ void send_vehicle_position(coordinates_t& position, pos_error_t& pos_error)
 
     msg.info.x = position.x;
     msg.info.y = position.y;
-    msg.info.z = position.z;
+    //msg.info.z = position.z;
+    msg.info.z = 0;
     msg.info.position_error = pos_error.xy;
     send_message(MSGID_POSITION, sizeof(msg.buf), msg.buf);
 }
