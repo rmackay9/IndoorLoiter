@@ -369,16 +369,11 @@ void get_ranges()
     device_range_t range;
     bool success = false;
     for (uint8_t i=0; i<NUM_ANCHORS; i++) {
-        // debug
-        //timer_start();
         if (Pozyx.doRanging(anchor_id[i], &range) == POZYX_SUCCESS) {
             // send info to ardupilot
             send_beacon_distance(i, range.distance);
             success = true;
         }
-        // debug
-        //Serial.print("bd ");
-        //timer_end();
     }
 
     // display errors
@@ -475,9 +470,5 @@ void send_message(uint8_t msg_id, uint8_t data_len, uint8_t data_buf[])
     num_sent += fcboardSerial.write(data_buf, data_len);
     num_sent += fcboardSerial.write(&checksum, 1);
     fcboardSerial.flush();
-    //Serial.print("Sent:");
-    //Serial.print(num_sent);
-    //Serial.print(" data_len:");
-    //Serial.println(data_len);
 }
 
