@@ -226,6 +226,14 @@ bool get_remote_range(uint16_t dev1, uint16_t dev2, int32_t& range)
     return false;
 }
 
+void print_failed_to_range(uint16_t dev1, uint16_t dev2)
+{  
+    Serial.print("ranging fail ");
+    Serial.print(dev1,HEX);
+    Serial.print(" to ");
+    Serial.println(dev2,HEX);
+}
+
 void set_beacon_position(uint8_t index, int32_t x_mm, int32_t y_mm, int32_t z_mm)
 {
     anchors_x[index] = x_mm;
@@ -256,18 +264,21 @@ bool configure_beacons()
     if (get_remote_range(anchor_id[0], anchor_id[1], x_range)) {
         set_beacon_position(1, x_range, 0, heights[1]);
     } else {
+        print_failed_to_range(anchor_id[0], anchor_id[1]);
         configured_ok = false;
     }
     // origin to y-axis (i.e. top left)
     if (get_remote_range(anchor_id[0], anchor_id[2], y_range)) {
         set_beacon_position(2, 0, y_range, heights[2]);
     } else {
+        print_failed_to_range(anchor_id[0], anchor_id[2]);
         configured_ok = false;
     }
     // top right
     if (x_range != 0 && y_range != 0) {
         set_beacon_position(3, x_range, y_range, heights[3]);
     } else {
+        Serial.println("beacons too close");
         configured_ok = false;
     }
 
